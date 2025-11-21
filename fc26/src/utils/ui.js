@@ -9,6 +9,12 @@ export default class UIUtils {
         this.imageCache = {}; // URL -> Image Object
     }
 
+    // Helper to get better font family
+    getFontFamily() {
+        // Use modern sans-serif fonts, fallback to Arial
+        return "'Helvetica Neue', 'Helvetica', 'Arial', sans-serif";
+    }
+
     // Helper to draw image from URL with cache
     drawNetImage(url, x, y, w, h) {
         if (!url) return;
@@ -28,6 +34,69 @@ export default class UIUtils {
 
         if (img.loaded) {
             this.ctx.drawImage(img, x, y, w, h);
+        }
+    }
+
+    // Helper to draw image maintaining aspect ratio
+    drawNetImageAspect(url, x, y, maxW, maxH, align = 'center') {
+        if (!url) return;
+
+        let img = this.imageCache[url];
+
+        if (!img) {
+            // Start load
+            img = tt.createImage();
+            img.src = url;
+            img.loaded = false;
+            img.onload = () => {
+                img.loaded = true;
+                // Store natural dimensions if available
+                if (img.naturalWidth && img.naturalHeight) {
+                    img.width = img.naturalWidth;
+                    img.height = img.naturalHeight;
+                }
+            };
+            this.imageCache[url] = img;
+        }
+
+        if (img.loaded) {
+            // Get image dimensions
+            const imgW = img.width || img.naturalWidth || 1;
+            const imgH = img.height || img.naturalHeight || 1;
+
+            if (imgW && imgH) {
+                const imgAspect = imgW / imgH;
+                const targetAspect = maxW / maxH;
+
+                let drawW, drawH, drawX, drawY;
+
+                if (imgAspect > targetAspect) {
+                    // Image is wider, fit to width
+                    drawW = maxW;
+                    drawH = maxW / imgAspect;
+                } else {
+                    // Image is taller, fit to height
+                    drawH = maxH;
+                    drawW = maxH * imgAspect;
+                }
+
+                // Align based on parameter
+                if (align === 'center') {
+                    drawX = x + (maxW - drawW) / 2;
+                    drawY = y + (maxH - drawH) / 2;
+                } else if (align === 'right') {
+                    drawX = x + maxW - drawW;
+                    drawY = y + (maxH - drawH) / 2;
+                } else {
+                    drawX = x;
+                    drawY = y + (maxH - drawH) / 2;
+                }
+
+                this.ctx.drawImage(img, Math.round(drawX), Math.round(drawY), Math.round(drawW), Math.round(drawH));
+            } else {
+                // Fallback: draw without aspect ratio if dimensions not available
+                this.ctx.drawImage(img, x, y, maxW, maxH);
+            }
         }
     }
 
@@ -78,7 +147,7 @@ export default class UIUtils {
         // Title (Formation Name)
         ctx.shadowBlur = 0;
         ctx.fillStyle = "#ffffff";
-        ctx.font = "bold 20px Arial";
+        ctx.font = "bold 20px " + this.getFontFamily();
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.fillText(title, x + w / 2, y + h - 25);
@@ -194,23 +263,23 @@ export default class UIUtils {
         if (player) {
             // Rating
             ctx.fillStyle = "#fff";
-            ctx.font = "bold 16px Arial";
+            ctx.font = "bold 16px " + this.getFontFamily();
             ctx.textAlign = "left";
             ctx.fillText(player.rating, dx + 5, dy + 20);
 
             // Position
-            ctx.font = "10px Arial";
+            ctx.font = "10px " + this.getFontFamily();
             const posText = Array.isArray(player.position) ? player.position[0] : player.position;
             ctx.fillText(posText, dx + 5, dy + 32);
 
             // Name
             ctx.textAlign = "center";
-            ctx.font = "bold 10px Arial";
+            ctx.font = "bold 10px " + this.getFontFamily();
             ctx.fillText(player.name, x, dy + h - 10);
         } else {
             // Empty Slot Role
             ctx.fillStyle = "#aaa";
-            ctx.font = "bold 14px Arial";
+            ctx.font = "bold 14px " + this.getFontFamily();
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
             ctx.fillText(role, x, y);
@@ -252,7 +321,7 @@ export default class UIUtils {
         const iconX = x + 10;
 
         ctx.fillStyle = "#fff";
-        ctx.font = "bold " + Math.round(fontSize) + "px Arial";
+        ctx.font = "bold " + Math.round(fontSize) + "px " + this.getFontFamily();
         ctx.textAlign = "left";
         ctx.textBaseline = "middle";
 
@@ -312,8 +381,8 @@ export default class UIUtils {
         // Scale fonts based on width
         const scale = w / 120; // Base scale on original width 120
 
-        // 2. Layout Constants
-        const leftColX = x + 24 * scale;
+        // 2. Layout Constants - Moved slightly to top-left
+        const leftColX = x + 20 * scale; // Reduced from 24 to move left
 
         // 3. Stats & Info (Text Color) - Adjust based on card type
         // Special cards use white text, icon cards have light backgrounds so use dark text
@@ -323,14 +392,14 @@ export default class UIUtils {
         ctx.fillStyle = isSpecial ? "#ffffff" : (isIcon ? "#1a1a1a" : "#3e3020"); // White for special, dark for icons, brown for gold cards
         ctx.textAlign = "center";
 
-        // Rating - Round coordinates for crisp rendering
-        ctx.font = `bold ${Math.round(22 * scale)}px Arial`;
-        ctx.fillText(player.rating, Math.round(leftColX), Math.round(y + 45 * scale)); // Moved down
+        // Rating - Round coordinates for crisp rendering, moved up and left
+        ctx.font = `bold ${Math.round(22 * scale)}px ${this.getFontFamily()}`;
+        ctx.fillText(player.rating, Math.round(leftColX), Math.round(y + 40 * scale)); // Moved up from 45 to 40
 
-        // Position - Round coordinates for crisp rendering
-        ctx.font = `bold ${Math.round(12 * scale)}px Arial`;
+        // Position - Round coordinates for crisp rendering, moved up and left
+        ctx.font = `bold ${Math.round(12 * scale)}px ${this.getFontFamily()}`;
         const posText = Array.isArray(player.position) ? player.position[0] : player.position;
-        ctx.fillText(posText, Math.round(leftColX), Math.round(y + 62 * scale)); // Moved down
+        ctx.fillText(posText, Math.round(leftColX), Math.round(y + 57 * scale)); // Moved up from 62 to 57
 
         // Icons (Nation & Club) - removed to avoid clutter
 
@@ -340,24 +409,23 @@ export default class UIUtils {
             const isSpecial = player.isSpecial === true;
 
             if (isSpecial) {
-                // Special avatar: fix distortion by adjusting aspect ratio
-                const avWidth = w * 0.7; // Slightly narrower to fix distortion
-                const avHeight = w * 0.75; // Slightly taller to maintain proper aspect
-                const avX = x + w - avWidth - (5 * scale);
+                // Special avatar: maintain aspect ratio to avoid distortion
+                const avMaxSize = w * 1; // Max size for special cards
+                const avX = x + w - avMaxSize - (5 * scale);
                 const avY = y + 20 * scale; // Higher position for special cards
-                this.drawNetImage(player.avatarImg, avX, avY, avWidth, avHeight);
+                this.drawNetImageAspect(player.avatarImg, avX, avY, avMaxSize, avMaxSize, 'right');
             } else {
-                // Normal avatar: smaller size, moved to the left
-                const avSize = w * 0.6; // Reduced from 0.75 to make it smaller
-                const avX = x + w - avSize - (15 * scale); // Moved left by increasing offset from 5 to 15
+                // Normal avatar: maintain aspect ratio, smaller size, moved to the left
+                const avMaxSize = w * 0.6; // Max size for normal cards
+                const avX = x + w - avMaxSize - (15 * scale); // Moved left by increasing offset from 5 to 15
                 const avY = y + 40 * scale; // Lower position for normal cards
-                this.drawNetImage(player.avatarImg, avX, avY, avSize, avSize);
+                this.drawNetImageAspect(player.avatarImg, avX, avY, avMaxSize, avMaxSize, 'right');
             }
         }
 
         // Name (Centered, lower half) - Round coordinates for crisp rendering
         ctx.fillStyle = isSpecial ? "#ffffff" : (isIcon ? "#1a1a1a" : "#3e3020"); // White for special, match text color based on card type
-        ctx.font = `bold ${Math.round(12 * scale)}px Arial`; // Smaller font size
+        ctx.font = `bold ${Math.round(12 * scale)}px ${this.getFontFamily()}`; // Smaller font size
         ctx.fillText(player.name.toUpperCase(), Math.round(x + w / 2), Math.round(y + h * 0.75)); // Moved down further
 
         if (!simplified) {
@@ -399,11 +467,11 @@ export default class UIUtils {
                 const statValue = getStat(statName);
 
                 // Draw label (category name) - Round coordinates
-                ctx.font = `bold ${labelFontSize}px Arial`;
+                ctx.font = `bold ${labelFontSize}px ${this.getFontFamily()}`;
                 ctx.fillText(statName, statX, Math.round(labelY));
 
                 // Draw value (number) - Round coordinates
-                ctx.font = `bold ${valueFontSize}px Arial`;
+                ctx.font = `bold ${valueFontSize}px ${this.getFontFamily()}`;
                 ctx.fillText(statValue, statX, Math.round(valueY));
             });
         }

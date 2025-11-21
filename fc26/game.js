@@ -6,11 +6,25 @@ const systemInfo = tt.getSystemInfoSync();
 const canvas = tt.createCanvas();
 const ctx = canvas.getContext('2d');
 
-// Screen Setup
-canvas.width = systemInfo.windowWidth;
-canvas.height = systemInfo.windowHeight;
-const WIDTH = canvas.width;
-const HEIGHT = canvas.height;
+// Get device pixel ratio for high-DPI displays
+const dpr = systemInfo.pixelRatio || 1;
+
+// Screen Setup - Use logical dimensions for display
+const WIDTH = systemInfo.windowWidth;
+const HEIGHT = systemInfo.windowHeight;
+
+// Set canvas actual pixel size (scaled by DPR for crisp rendering)
+canvas.width = WIDTH * dpr;
+canvas.height = HEIGHT * dpr;
+
+// Scale context to match logical dimensions
+ctx.scale(dpr, dpr);
+
+// Set canvas display size to logical dimensions
+if (canvas.style) {
+    canvas.style.width = WIDTH + 'px';
+    canvas.style.height = HEIGHT + 'px';
+}
 
 // Optimize canvas for better text rendering
 ctx.imageSmoothingEnabled = true;
@@ -47,6 +61,11 @@ const STATE = {
 };
 
 const ui = new UIUtils(ctx, WIDTH, HEIGHT);
+
+// Helper function for better font family
+function getFontFamily() {
+    return "'Helvetica Neue', 'Helvetica', 'Arial', sans-serif";
+}
 
 // Initialization
 function init() {
@@ -328,7 +347,7 @@ function draw() {
 
 function drawFormationSelect() {
     ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 32px Arial";
+    ctx.font = "bold 32px " + getFontFamily();
     ctx.textAlign = "center";
     ctx.fillText("Choose Formation", WIDTH / 2, 60);
 
@@ -355,7 +374,7 @@ function drawDraftSquad() {
 
     // Team Rating
     ctx.fillStyle = "#fff";
-    ctx.font = "bold 24px Arial";
+    ctx.font = "bold 24px " + getFontFamily();
     ctx.textAlign = "left";
     ctx.fillText(`Rating: ${STATE.match.playerRating}`, 30, HEIGHT - 45);
 
@@ -364,13 +383,13 @@ function drawDraftSquad() {
         ctx.fillStyle = "#00ff00";
         ctx.fillRect(WIDTH / 2 - 60, HEIGHT - 80, 120, 50);
         ctx.fillStyle = "#000";
-        ctx.font = "bold 24px Arial";
+        ctx.font = "bold 24px " + getFontFamily();
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.fillText("PLAY", WIDTH / 2, HEIGHT - 55);
     } else {
         ctx.fillStyle = "#666";
-        ctx.font = "18px Arial";
+        ctx.font = "18px " + getFontFamily();
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.fillText("Tap slot to draft", WIDTH / 2, HEIGHT - 55);
@@ -398,7 +417,7 @@ function drawDraftModal() {
     if (STATE.draft.activeSlotIndex !== -1) {
         const currentRole = STATE.draft.squad[STATE.draft.activeSlotIndex].role;
         ctx.fillStyle = "#fff";
-        ctx.font = "bold 32px Arial";
+        ctx.font = "bold 32px " + getFontFamily();
         ctx.textAlign = "center";
         ctx.fillText(`Choose Player (${currentRole})`, WIDTH / 2, 60);
     }
@@ -422,17 +441,17 @@ function drawMatchResult() {
     ctx.fillRect(0, 0, WIDTH, HEIGHT);
     ctx.fillStyle = "#fff";
     ctx.textAlign = "center";
-    ctx.font = "bold 40px Arial";
+    ctx.font = "bold 40px " + getFontFamily();
     const scoreStr = `${STATE.match.playerScore} - ${STATE.match.aiScore}`;
     ctx.fillText("FULL TIME", WIDTH / 2, 150);
-    ctx.font = "bold 80px Arial";
+    ctx.font = "bold 80px " + getFontFamily();
     ctx.fillStyle = "#00ff00";
     ctx.fillText(scoreStr, WIDTH / 2, 250);
-    ctx.font = "20px Arial";
+    ctx.font = "20px " + getFontFamily();
     ctx.fillStyle = "#ccc";
     ctx.fillText("My Team", WIDTH / 2 - 100, 320);
     ctx.fillText(STATE.match.aiTeamName, WIDTH / 2 + 100, 320);
-    ctx.font = "16px Arial";
+    ctx.font = "16px " + getFontFamily();
     ctx.fillText(`OVR: ${STATE.match.playerRating}`, WIDTH / 2 - 100, 350);
     ctx.fillText(`OVR: ${STATE.match.aiRating}`, WIDTH / 2 + 100, 350);
     let resultText = "DRAW";
@@ -445,10 +464,10 @@ function drawMatchResult() {
         resultColor = "#ff0000";
     }
     ctx.fillStyle = resultColor;
-    ctx.font = "bold 50px Arial";
+    ctx.font = "bold 50px " + getFontFamily();
     ctx.fillText(resultText, WIDTH / 2, 500);
     ctx.fillStyle = "#666";
-    ctx.font = "20px Arial";
+    ctx.font = "20px " + getFontFamily();
     ctx.fillText("Tap anywhere to restart", WIDTH / 2, HEIGHT - 100);
 }
 
